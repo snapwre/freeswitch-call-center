@@ -1,0 +1,79 @@
+name: Build FreeSWITCH base image
+
+# Builds the FreeSWITCH Call Center base image (./Dockerfile) — FreeSWITCH + Call Center modules,
+# including mod_callcenter, mod_fifo, mod_shout, etc. — and publishes it to GitHub
+# Container Registry at ghcr.io/<owner>/freeswitch-call-center.
+#
+# Consuming repos build their application image FROM this base, so all modules
+# are available without rebuilding FreeSWITCH locally.
+#
+# REQUIRED repo secret:
+#   SIGNALWIRE_TOKEN — free SignalWire Personal Access Token
+#                      (https://signalwire.com → Dashboard → Personal Access Token).
+#                      Needed because the FreeSWITCH 1.10 apt repo is token-gated.
+
+on:
+  workflow_dispatch:          # run manually from the Actions tab
+    inputs:
+      tag:
+        description: "Extra image tag to push (in addition to latest / sha)"
+        required: false
+        default: ""
+  push:
+    branches: [main]          # any push to main rebuilds & republishes
+    tags:
+      - "fs-v*"               # e.g. fs-v1.10.12 → publishes that version tag
+
+concurrency:
+  group: freeswitch-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write          # push to GHCR
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/freeswitch-call-center
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=sha,prefix=,format=short
+            type=ref,event=tag
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+
+      - name: Set up QEMU (for arm64)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # amd64 for the production server; arm64 so the image also runs
+          # natively on Apple-Silicon Macs for local testing.
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            signalwire_token=${{ secrets.SIGNALWIRE_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
