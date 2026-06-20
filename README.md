@@ -36,6 +36,7 @@ Below is the list of FreeSWITCH modules pre-packaged in this image:
 | **Queue & Routing** | `mod_callcenter` | ACD (Automated Call Distribution) engine managing queues, agents, and routing strategies. |
 | | `mod_fifo` | Standard First-In-First-Out queue engine for simpler call-distribution schemas. |
 | | `mod_valet_parking` | Call parking lot manager allowing agents to park and retrieve active calls. |
+| | `mod_voicemail` | Standard voicemail engine for routing calls to agent mailboxes when unavailable. |
 | **Supervisor & Live** | `mod_conference` | Conferencing engine used for silent monitoring, coaching (whispering), and call barge-in. |
 | **Core Engine** | `mod_commands` | Core API command interface. |
 | | `mod_dptools` | Essential dialplan tools and applications. |
@@ -43,14 +44,18 @@ Below is the list of FreeSWITCH modules pre-packaged in this image:
 | | `mod_expr` | Mathematical and logical expression evaluation. |
 | **Protocols & Interface**| `mod_sofia` | SIP engine for trunking and registrations. |
 | | `mod_event_socket` | Event Socket Library (ESL) interface for external control and dashboards. |
+| | `mod_verto` | WebRTC signaling protocol (JSON-RPC over WebSockets) for browser-based endpoints. |
+| | `mod_rtc` | WebRTC helper module for media and signaling management. |
 | **Media & Audio** | `mod_sndfile` | High-quality audio playback and recording backend. |
 | | `mod_native_file` | Direct native audio format playback. |
 | | `mod_tone_stream` | Multi-frequency tone generation (DTMF, ringback, custom cadences). |
 | | `mod_shout` | MP3 streaming and local MP3 playback (critical for custom Music on Hold). |
 | | `mod_http_cache` | HTTP/HTTPS caching client to download and store audio files on demand. |
+| | `mod_audio_stream` | Outbound/inbound real-time L16 PCM audio streaming over WebSockets (critical for OpenAI Realtime, transcription, and conversational AI bots). |
 | **IVR & Scripting** | `mod_lua` | In-process Lua scripting for ultra-low latency call flows. |
 | **Web Integration** | `mod_curl` | HTTP client capabilities directly from the dialplan or Lua scripts. |
 | | `mod_httapi` | HTML-like RESTful IVR engine via HTTP/HTTPS. |
+| | `mod_xml_curl` | Dynamic remote XML configurations/directories/dialplans via HTTP/HTTPS. |
 | **Accounting & Logging**| `mod_xml_cdr` | Detailed Call Detail Records (CDRs) sent as XML to web endpoints. |
 | | `mod_json_cdr` | Detailed Call Detail Records (CDRs) sent as JSON to HTTP web endpoints. |
 | | `mod_console` | Console logger. |
@@ -101,7 +106,7 @@ RUN mkdir -p /var/log/freeswitch /var/run/freeswitch /var/cache/freeswitch/http_
     && chown -R freeswitch:freeswitch /etc/freeswitch /var/log/freeswitch /var/run/freeswitch /var/cache/freeswitch
 
 # Default ports are already exposed:
-# 5060/udp (SIP), 5080/udp (SIP alternative/carrier), 8021/tcp (ESL)
+# 5060/udp (SIP), 5080/udp (SIP alternative/carrier), 8021/tcp (ESL), 8081/tcp (WS), 8082/tcp (WSS)
 ```
 
 > [!IMPORTANT]
